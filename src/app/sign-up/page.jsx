@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Card,
     CardHeader,
@@ -25,7 +25,8 @@ export default function SignUp() {
     const [pendingVerification, setPendingVerification] = useState(false);
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
-    const [role, setRole] = useState("")
+    const [gender, setGender] = useState("");
+    const [age, setAge] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -37,12 +38,11 @@ export default function SignUp() {
     async function submit(e) {
         e.preventDefault();
         setLoading(true);
-        if (!isLoaded) {
-            return;
-        }
 
-        if (!role || role === "") {
-            setError("Please select a role");
+        if (!isLoaded) return;
+        if (!gender || !age) {
+            setError("Please select your gender and enter your age.");
+            setLoading(false);
             return;
         }
 
@@ -51,16 +51,16 @@ export default function SignUp() {
                 emailAddress,
                 password,
                 unsafeMetadata: {
-                    role: role,
+                    gender: gender,
+                    age: age,
                 },
-            })
+            });
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
             setPendingVerification(true);
         } catch (err) {
             console.error(JSON.stringify(err, null, 2));
             setError(err.errors[0].message);
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     }
@@ -74,13 +74,11 @@ export default function SignUp() {
             setLoading(false);
             return;
         }
+
         try {
             const completeSignUp = await signUp.attemptEmailAddressVerification({
                 code,
             });
-            if (completeSignUp.status !== "complete") {
-                console.log(JSON.stringify(completeSignUp, null, 2));
-            }
 
             if (completeSignUp.status === "complete") {
                 await setActive({ session: completeSignUp.createdSessionId });
@@ -88,8 +86,7 @@ export default function SignUp() {
         } catch (err) {
             console.error(JSON.stringify(err, null, 2));
             setError(err.errors[0].message);
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     }
@@ -139,16 +136,26 @@ export default function SignUp() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="role">Role</Label>
-                                <Select onValueChange={setRole} required>
+                                <Label htmlFor="gender">Gender</Label>
+                                <Select onValueChange={setGender} required>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select your role" />
+                                        <SelectValue placeholder="Select your gender" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="hotel">Hotel</SelectItem>
-                                        <SelectItem value="ngo">NGO</SelectItem>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="age">Age</Label>
+                                <Input
+                                    type="number"
+                                    id="age"
+                                    value={age}
+                                    onChange={(e) => setAge(e.target.value)}
+                                    required
+                                />
                             </div>
                             {error && (
                                 <Alert variant="destructive">
@@ -156,9 +163,7 @@ export default function SignUp() {
                                 </Alert>
                             )}
                             <Button type="submit" className="w-full" disabled={loading}>
-                                {
-                                    loading ? "Wait..." : "Sign Up"
-                                }
+                                {loading ? "Wait..." : "Sign Up"}
                             </Button>
                         </form>
                     ) : (
